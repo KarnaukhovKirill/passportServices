@@ -1,9 +1,9 @@
 package ru.job4j.passportrestservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import ru.job4j.passportrestservice.entity.Passport;
 import ru.job4j.passportrestservice.service.PassportService;
@@ -31,13 +31,13 @@ public class PassportController {
     }
 
     @GetMapping(value = "/find", params = {"seria"})
-    public ResponseEntity<Passport> findBySeria(
+    public ResponseEntity<List<Passport>> findBySeria(
             @RequestParam(value = "seria") String seria) throws Throwable {
-        return new ResponseEntity<>(passportService
-                .findPassportBySeria(seria)
-                .orElseThrow((Supplier<Throwable>) () ->
-                        new IllegalArgumentException("Паспорт с seria = " + seria + " не найден")),
-                HttpStatus.OK);
+        if (seria.length() != 4) {
+            throw new IllegalArgumentException("Серия паспорта должна содержать 4 цифры, "
+                    + "в вашем запросе " + seria.length());
+        }
+        return new ResponseEntity(passportService.findPassportsBySeria(seria), HttpStatus.OK);
     }
 
     @PostMapping("/save")
@@ -45,28 +45,25 @@ public class PassportController {
         return new ResponseEntity<>(passportService.createPassport(passport), HttpStatus.CREATED);
     }
 
-    @Transactional
     @PutMapping(value = "/update", params = {"id"})
     public ResponseEntity<Passport> updatePassport(@RequestBody Passport passport,
                                                    @RequestParam String id) {
         var passportId = Integer.parseInt(id);
-        checkExistencePassport(passportId);
-        passport.setId(passportId);
-        passportService.createPassport(passport);
-        return new ResponseEntity<>(passport, HttpStatus.OK);
+        if (passportService.isExisting(passportId)) {
+            passport.setId(passportId);
+            return new ResponseEntity<>(passportService.updatePassport(passport), HttpStatus.OK);
+        } else {
+            throw  new IllegalArgumentException("Паспорт с id = " + id + " не найден");
+        }
+
     }
 
-    @Transactional
     @DeleteMapping(value = "/delete", params = {"id"})
     public ResponseEntity<Void> deletePassport(@RequestParam String id) {
         var passportId = Integer.parseInt(id);
-        checkExistencePassport(passportId);
-        passportService.deletePassport(passportId);
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    private void checkExistencePassport(int id) {
-        if (passportService.findPasportById(id).isEmpty()) {
+        if (passportService.deletePassport(passportId)) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        } else {
             throw  new IllegalArgumentException("Паспорт с id = " + id + " не найден");
         }
     }
@@ -94,11 +91,24 @@ public class PassportController {
     public void exceptionHandler(Exception e,
                                  HttpServletRequest request,
                                  HttpServletResponse response) throws IOException {
-        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setStatus(HttpStatus.NOT_FOUND.value());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(new HashMap<>() { {
             put("message", e.getMessage());
+            put("type", e.getClass());
+        }}));
+    }
+
+    @ExceptionHandler(value = {DataIntegrityViolationException.class})
+    public void jdbcExceptionHandler(Exception e,
+                                 HttpServletRequest request,
+                                 HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(objectMapper.writeValueAsString(new HashMap<>() { {
+            put("message", "Нарушение уникальности пары серия - номер паспорта");
             put("type", e.getClass());
         }}));
     }

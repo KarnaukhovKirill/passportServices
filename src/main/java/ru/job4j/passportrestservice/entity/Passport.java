@@ -11,10 +11,12 @@ public class Passport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String seria;
+    private String number;
     private String name;
     private String surname;
     @Temporal(value = TemporalType.DATE)
-    private Date date;
+    @Column(name = "date_expiry")
+    private Date dateExpiry;
 
     public Passport() {
     }
@@ -23,7 +25,7 @@ public class Passport {
         this.seria = seria;
         this.name = name;
         this.surname = surname;
-        this.date = date;
+        this.dateExpiry = date;
     }
 
     public int getId() {
@@ -42,6 +44,14 @@ public class Passport {
         this.seria = seria;
     }
 
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
     public String getName() {
         return name;
     }
@@ -58,12 +68,12 @@ public class Passport {
         this.surname = surname;
     }
 
-    public Date getDate() {
-        return date;
+    public Date getDateExpiry() {
+        return dateExpiry;
     }
 
-    public void setDate(Date date) {
-        this.date = date;
+    public void setDateExpiry(Date dateExpiry) {
+        this.dateExpiry = dateExpiry;
     }
 
     @Override
@@ -90,7 +100,7 @@ public class Passport {
                 + ", seria='" + seria + '\''
                 + ", name='" + name + '\''
                 + ", surname='" + surname + '\''
-                + ", date=" + date
+                + ", date=" + dateExpiry
                 + '}';
     }
 }

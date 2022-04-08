@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.job4j.passportrestservice.entity.Passport;
 import ru.job4j.passportrestservice.repository.PassportRepository;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -18,13 +17,15 @@ public class PassportService {
     @Autowired
     private PassportRepository passportRepository;
 
-    public List<Passport> findAll() {
-        List<Passport> rsl = new ArrayList<>();
-        passportRepository.findAll().forEach(rsl::add);
-        return rsl;
+    public Iterable<Passport> findAll() {
+        return passportRepository.findAll();
     }
 
     public Passport createPassport(Passport passport) {
+        return passportRepository.save(passport);
+    }
+
+    public Passport updatePassport(Passport passport) {
         return passportRepository.save(passport);
     }
 
@@ -32,12 +33,8 @@ public class PassportService {
         return passportRepository.findById(id);
     }
 
-    public void deletePassport(int id) {
-        passportRepository.deleteById(id);
-    }
-
-    public Optional<Passport> findPassportBySeria(String seria) {
-        return Optional.ofNullable(passportRepository.findPassportBySeria(seria));
+    public boolean deletePassport(int id) {
+        return passportRepository.deletePassportById(id) > 0;
     }
 
     public List<Passport> findUnavailable() {
@@ -49,5 +46,13 @@ public class PassportService {
         date.setMonth(date.getMonth() + month);
         System.out.println(date);
         return passportRepository.findReplaceablePassports(date);
+    }
+
+    public List<Passport> findPassportsBySeria(String seria) {
+        return passportRepository.findPassportsBySeria(seria);
+    }
+
+    public boolean isExisting(int id) {
+        return passportRepository.existsById(id);
     }
 }

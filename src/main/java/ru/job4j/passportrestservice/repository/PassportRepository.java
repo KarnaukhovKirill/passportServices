@@ -1,5 +1,6 @@
 package ru.job4j.passportrestservice.repository;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -10,11 +11,14 @@ import java.util.List;
 
 @Repository
 public interface PassportRepository extends CrudRepository<Passport, Integer> {
-    public Passport findPassportBySeria(String seria);
+    @Modifying
+    int deletePassportById(int id);
 
-    @Query("from Passport p where p.date < current_date ")
-    public List<Passport> findUnavailablePassports();
+    List<Passport> findPassportsBySeria(String seria);
 
-    @Query("from Passport p where p.date between current_date and :timeToUnavailable")
-    public List<Passport> findReplaceablePassports(@Param("timeToUnavailable") Date time);
+    @Query("from Passport p where p.dateExpiry < current_date ")
+    List<Passport> findUnavailablePassports();
+
+    @Query("from Passport p where p.dateExpiry between current_date and :timeToUnavailable")
+    List<Passport> findReplaceablePassports(@Param("timeToUnavailable") Date time);
 }
